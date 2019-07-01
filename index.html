@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html xmlns='http://www.w3.org/1999/xhtml' xml:lang='en' lang='en'>
+<head>
+    <meta charset="utf-8"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <link rel="shortcut icon" type="image/vnd.microsoft.icon" href="../favicon.ico"/>
+
+    <title>Final Project - DU Yinwei - Computer Graphics ETHZ 2018</title>
+
+    <link href="resources/bootstrap.min.css" rel="stylesheet"/>
+    <link href="resources/offcanvas.css" rel="stylesheet"/>
+    <link href="resources/twentytwenty.css" rel="stylesheet" type="text/css"/>
+    <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+      <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+    <script type="text/x-mathjax-config">
+        MathJax.Hub.Config({
+          tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}
+        });
+    </script>
+</head>
+
+<body>
+
+<nav class="navbar navbar-default navbar-fixed-top _navbar-inverse">
+    <div class="container">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+            <ul class="nav navbar-nav">
+                <li><a href="#intro">Intro</a></li>
+                <li><a href="#thin_lens">Thin Lens</a></li>
+                <li><a href="#spot">Spot Lihgt</a></li>
+                <li><a href="#image_texture">Image Texture</a></li>
+                <li><a href="#model">Mesh Model</a></li>
+                <li><a href="#bilateral">Bilateral Filter</a></li>
+                <li><a href="#disney">Disney BRDF</a></li>
+                <li><a href="#homogeneous">Homogeneous Participating Media</a></li>
+                <li><a href="#final">Final Scene</a></li>
+                <li><a href="#reference">References</a></li>
+            </ul>
+        </div>
+
+    </div>
+</nav>
+
+<div class="container headerBar">
+    <h1 id="intro">Final Project - DU Yinwei</h1>
+    <h3>Computer Graphics ETHZ 2018</h3>
+</div>
+
+<div class="container contentWrapper">
+<div class="pageContent">
+
+    <!-- ================================================================= -->
+
+    <h4>Motivational Image</h4>
+
+    <p>
+        This year's theme is about "Opposites" and for me the motivational picture that can reflect it is the constrast between liquid shape and solid shape of water.
+    </p>
+    <p align="middle"> <img  src="images/Ice_water.jpg" alt="Motivational Image" class="img-responsive" width="50%" height="50%"></p>
+    
+    <p class="text-center">Motivational Image</p>
+
+
+    <!-- Thin Lens -->
+
+    <h4 id="thin_lens">Thin Lens (depth of the field)</h4>
+    <p>src/thin_lens.cpp</p>
+    <p>
+        Thin lens camera model focuses light through a finite-sized aperture onto the film plane. First, we sample a point on aperture. Then we compute the ray that passes through the center of the lens and the point where it intersects the plane of focus.
+        The sample ray must have the same intersection point on the focal plane, as the following diagraph shows (notice the fact that any ray that pass through the center of the lens will persume its original direction):
+    </p>
+    <p align="middle"> <img  src="images/thin_lens_demo.png" alt="Motivational Image" class="img-responsive" width="50%" height="50%"></p>  
+    <p class="text-center">Sample ray direction</p>
+    <p>
+        Here is a comparison of my thin lens model over that rendered in mitsuba:
+    </p>
+    <div class="twentytwenty-container">
+	    <img src="images/thin_lens.jpg" alt="Mine" class="img-responsive">
+	    <img src="images/mitsuba_thin_lens.jpg" alt="Mitsuba" class="img-responsive">
+	</div>
+    <br>
+    <br>
+
+    <!-- Spot Light -->
+    <h4 id="spot">Spot Light</h4>
+    <p>src/spotlight.cpp</p>
+    <p>
+        Spot light is a variation of point light, which contains two more parameters called $\textit{TotalWidth}$ and $\textit{FalloffStart}$. As the picture here shows:
+
+    </p>
+    <p align="middle"> <img  src="images/spot_light_demo.png" alt="Motivational Image" class="img-responsive" width="50%" height="50%"></p> 
+
+    <p> If the sample direction is within the $\textit{FalloffStart}$ cone, it has $\textit{FalloffCoefficient}$ 1
+        and if it is out side of $\textit{TotalWidth}$, the coefficient is 0. Between those two cones, the coefficient is $$(\frac{\cos{\theta} - \cos{TotalWidth}}{\cos{FalloffStart} - \cos{TotalWidth}})^4$$
+        We have to add this value every time we want to calculate the power of the light source. And the rest of the class is very similar to point light except that we are now
+        sampling in a uniform cone instead of a sphere.
+    </p>
+    <p>
+        Here is a comparison of my spot light source over that rendered in mitsuba:
+    </p>
+    <div class="twentytwenty-container">
+	    <img src="images/spot_light.png" alt="Mine" class="img-responsive">
+	    <img src="images/mitsuba_spot.png" alt="Mitsuba" class="img-responsive">
+	</div>
+    <br>
+    <br>
+
+    <!-- Image Texture -->
+    <h4 id="image_texture">Image Texture</h4>
+    <p>src/image_texture.cpp</p>
+    <p>
+        We first scale the uv coordinate to the same size of input exr file. Then for the new point (x,y) we find the four adjacent pixels. The value of (x,y) is the linear combination of those four blocks
+        (namely C00, C01, C10, C11) as this graph illustrates:
+    </p>
+    <p align="middle"> <img  src="images/image_texture_demo.png" alt="Motivational Image" class="img-responsive" width="50%" height="50%"></p> 
+    <p>
+            Here is a comparison of my image texture over that rendered in mitsuba:
+        </p>
+        <div class="twentytwenty-container">
+            <img src="images/mesh-texture.jpg" alt="Mine" class="img-responsive">
+            <img src="images/mitsuba_spot.jpg" alt="Mitsuba" class="img-responsive">
+        </div>
+        <br>
+        <br>
+    
+    <!-- Mesh Model -->
+    <h4 id="model">Mesh Model</h4>
+    <p>
+        The ice cube is modeled my my self using Maya and the final scene is also composed using Maya. The free table model is quite complex and I download it from turbosquid. Like the following two pictures show:
+    </p>
+    <p align="middle"> <img  src="images/proposed_ice_cube.png" alt="Motivational Image" class="img-responsive" width="50%" height="50%"></p>
+    <p align="middle"> <img  src="images/Model_mesh.png" alt="Motivational Image" class="img-responsive" width="50%" height="50%"></p>
+
+
+    <!-- Bilateral Filter -->
+    <h4 id="bilateral">Bilateral Filter</h4>
+    <p>bilateral_filter/bilateral.py</p>
+    <p>
+        Unlike the other features, bilateral filter is implemented outside of Nori framwork, i.e. after Nori generates the picture we use a python prgram to denoise it.
+        This program uses external libraries: OpenCV2 and numpy to read the image into a 2d array in three different color channel.
+    </p>
+    <p> 
+        Bilateral filter is implemented using this equation:
+        $$
+            BF[I]_{\textbf{p}} = \frac{1}{W_{\textbf{p}}} \sum_{\textbf{q} \in S} G_{{\sigma}_s} (|| \textbf{p} - \textbf{q} ||) G_{{\sigma}_r}(|I_{\textbf{p}}- I_{\textbf{q}}|) I_{\textbf{q}}
+        $$
+        where,
+        $$
+        W_{\textbf{p}} = \sum_{\textbf{q} \in S} G_{{\sigma}_s} (|| \textbf{p} - \textbf{q} ||) G_{{\sigma}_r}(|I_{\textbf{p}}- I_{\textbf{q}}|)
+        $$
+        And $G$ is the gaussion filter.
+    </p>
+    <p>
+        To use the bilateral filter, first make sure that your computere already has the OpenCV2 and numpy installed, they using the command python2 bilateral.py [filename].
+        Here is a comparison between my filter and the built-in bilateral filter in OpenCV:
+    </p>
+
+    <div class="twentytwenty-container">
+            <img src="images/test.jpg" alt="Original" class="img-responsive">
+            <img src="images/Bilateral_image_OpenCV.png" alt="OpenCV" class="img-responsive">
+            <img src="images/Bilateral_image_own.png" alt="Mine" class="img-responsive">
+    </div> 
+        
+    <br>
+    <br>
+
+    <!-- Disney BRDF -->
+    <h4 id="disney">Disney BRDF</h4>
+    <p>src/disneyBRDF.cpp</p>
+    <p>
+        <a href="https://disney-animation.s3.amazonaws.com/library/s2012_pbs_disney_brdf_notes_v2.pdf">This</a> paper discusses how we can implement Disney BRDF. Here we use 10 parameters to model different material:
+        $\textit{baseColor}$ which is the surface color, $\textit{subsurface}$ which controls diffuse shape using a subsurface approximation., $\textit{metallic}$ which is a linear blend between dielectric and metallic model,
+        $\textit{specular}$ which is incident specular amount, $\textit{specularTint}$ which is a concession for artistic control that tints incident specular towards the base color, $\textit{roughness}$  which controls diffuse
+        and specular response, $\textit{sheen}$ which is used for cloth, $\textit{sheenTint}$ which is amount to tint sheen towards base color, $\textit{clearcoat}$ which is a second, special-purpose specular lobe and finally 
+        $\textit{clearcoatGloss}$ which controls clearcoat glossiness.
+    </p>
+    <p> We have the following variables: </p>
+    <p> $\theta_l$ incident angle </p>
+    <p> $\theta_v$ outgoing angle </p>
+    <p> $\theta_h$ half angle </p>
+
+    <h5> Frensel Terms </h5>
+    <p> Disney BRDF uses a Schlick's approximation to calculate Frensel term as follows: $$ F(\theta) = (1-\cos{\theta})^5$$ </p>
+    <h5> Diffuse Model </h5>
+    <p>They also develop a novel emprical model for diffuse retroreflection, the equation is:
+        $$ f_d = \frac{\textit{baseColor}}{\pi} (1+(F_{D90}-1)F(\theta_l))(1+(F_{D90}-1)F(\theta_v))$$ where
+        $$F_{D90} = 0.5 + 2\cos{\theta_h}^2\textit{roughness}$$
+    </p>
+    <h5> Subsurface Model </h5>
+    <p>Disney BRDF blends between the diffuse model and Hanrahan-Krueger subsurface BRDF approximation.</p>
+    <h5> Specular Model </h5>
+    <p>In microfacet model, except for the diffuse term, we have specular term:
+        $$\frac{D(\theta_h)F(\theta_d)G(\theta_l,\theta_v)}{4\cos{\theta_l}\cos{\theta_v}}$$
+        $D$ is the microfacet distribution function, $F$ is the Fresnel reflection coefficient, and $G$ is the geometric attenuation or shadowing factor.
+        We use Generalized-Trowbridge-Reitz (GTR) with $\gamma = 1, \alpha = max(0.001, \textit{roughness}^2)$ for specular model, the function is:
+        $$D_{GTR}(\theta_h) = \frac{(\gamma-1)(\alpha^2-1)}{\pi(1-\alpha^{2(1-\gamma)})}\frac{1}{(1+(\alpha^2-1)\cos{\theta_h}^2)^\gamma}$$
+    </p>
+    <h5> Clearcoat Model </h5>
+    <p>
+        Very similar to specular model, but in $D_GTR$ the parameters are $\gamma = 2$ and $\alpha = lerp(\textit{clearcoatGloss}, 0.1, 0.001)$
+    </p>
+    <h5> Sheen Model </h5>
+    <p> Sheen term used in Disney BRDF is : $$ f_sheen=F(\theta_h)*\textit{sheen}*lerp(sheenTint,1,baseColor)$$</p>
+    <p> The mitsuba renderer doesn't support the Disney BRDF so I can only compare some scenes rendered in Nori with different parameters, and due to the limitation of my
+        model and that I don't implement environment emitter, some parameters don't show a very obvious difference.
+    </p>
+
+    <div class="twentytwenty-container">
+            <img src="images/test_roughness_0.jpg" alt="roughness = 0" class="img-responsive">
+            <img src="images/test_roughness_1.jpg" alt="roughness = 1" class="img-responsive">
+    </div>
+    <p class="text-center">Different roughness</p>
+    <br>
+    <br>
+
+    <div class="twentytwenty-container">
+            <img src="images/test_metallic_0.jpg" alt="metallic = 0" class="img-responsive">
+            <img src="images/test_metallic_1.jpg" alt="metallic = 1" class="img-responsive">
+    </div>
+    <p class="text-center">Different metallic</p>
+    <br>
+    <br>
+    <div class="twentytwenty-container">
+            <img src="images/test_specular_0.jpg" alt="specular = 0" class="img-responsive">
+            <img src="images/test_specular_1.jpg" alt="specular = 1" class="img-responsive">
+    </div>
+    <p class="text-center">Different specular</p>
+    <br>
+    <br>
+    <h5>
+        Importance Sampling
+    </h5>
+    <p>
+        The Disney BRDF sampling is composed of three different sampling mehtods: $\textbf{Cosine weighted hemisphere}$, $\textbf{GTR1}$ and $\textbf{GTR2}$. As a result, I have to implement two additional 
+        distributions (which is also used in the previous section for calculating GTR function).
+    </p>
+    <p>
+            To sample the BRDF, we use russion roulette to determine which sample methods to use. If the random number is less than $$ratio_{diffuse} = \frac{1-metallic}{2} $$ we use cos weighted hemisphere.
+            Otherwise, if the random number is less than $$ratio_{GTR2} = \frac{1}{1+clearCoat}$$ we use square to GTR2, otherwise we use square to GTR1.
+    </p> 
+
+    <p>Here is the verification of my distribution function in warptest:</p>
+
+    <p align="middle"> <img  src="images/GTR1_visualization.png" alt="Motivational Image" class="img-responsive" width="50%" height="50%"></p>
+    <p align="middle"> <img  src="images/GTR1_verification.png" alt="Motivational Image" class="img-responsive" width="50%" height="50%"></p>
+    <p class="text-center">GTR1</p>
+    <br>
+    <br>
+    <p align="middle"> <img  src="images/GTR2_visualization.png" alt="Motivational Image" class="img-responsive" width="50%" height="50%"></p>
+    <p align="middle"> <img  src="images/GTR2_verification.png" alt="Motivational Image" class="img-responsive" width="50%" height="50%"></p>
+    <p class="text-center">GTR2</p>
+    <br>
+    <br>
+
+    <!-- Homogeneous Participating Media -->
+    <h4 id="homogeneous">Homogeneous Participating Media</h4>
+    <p>include/nori/medium.h</p>
+    <p>src/homogeneous_medium.cpp</p>
+    <p>src/volumetric_path_tracer.cpp</p>
+    <p> 
+        For this part I implement a volumetric path tracer. But first, I create a new nori object called medium and also medium query record. In medium class, we have some basic
+        functions such as phase function, calculate transmittance value and calculate the free flight distance.
+    </p>
+    <p>
+        In source file we implement a homogeneous medium class. Here we also determine whether a given point is in the medium (just as that in arealight) cause in the end the medium
+        is attached in some shape. The phase function of the homegeneous medium is the simplest one: $$f_p(\omega,\omega^{\prime}) = \frac{1}{4\pi}$$ Transmittance:$$ Tr(x,y) = e^{(-\sigma_t(x-y))}$$
+        and free path sampling: $$t = -\frac{ln(1-\xi)}{\sigma_t}$$
+    </p>
+
+    <p>
+        For the path integrator itself, it is based on the path_mis class. So for every ray, we first check if it's in the medium, if it is, follow the psudocode on page 118 of the <a href="https://cgl.ethz.ch/teaching/cg18/downloads/slides/13-participating-media-I.pdf"> lecture slide</a>.
+        If it is outside of the medium, we do the same BSDF and emitter sampling as that in path_mis.
+    </p>
+    <p>
+            Here is a comparison of my volumetric path tracer over that rendered in mitsuba:
+    </p>
+    <div class="twentytwenty-container">
+        <img src="images/homo_mine.jpg" alt="Mine" class="img-responsive">
+        <img src="images/mitsuba_homosphere.jpg" alt="Mitsuba" class="img-responsive">
+    </div>
+    <br>
+    <br>
+
+     <!-- Final Scene -->
+     <h4 id="final">Final Scene</h4>
+     <p>Here is the final rendered scene of this project</p>
+     <p align="middle"> <img  src="images/final_scene.png" alt="Motivational Image" class="img-responsive" width="70%" height="50%"></p>
+     <br>
+     <br>
+
+    <!-- Reference -->
+    <h4 id="reference">References</h4>
+    <p>
+        [1] Thin lens, spot light and Image texture are all from PBRT book: http://www.pbr-book.org/3ed-2018/contents.html
+    </p>
+    <p>
+        [2] Bilateral filter: https://people.csail.mit.edu/sparis/publi/2009/fntcgv/Paris_09_Bilateral_filtering.pdf
+    </p>
+
+    <p>
+        [3] Disney BRDF paper: Physically-Based Shading at Disney https://disney-animation.s3.amazonaws.com/library/s2012_pbs_disney_brdf_notes_v2.pdf
+    </p>
+
+    <p>
+        [4] Disney BRDF source code: https://github.com/wdas/brdf
+    </p>
+
+    <p>
+        [5] Homogeneous participating medium from lecture notes of computer graphic course: https://cgl.ethz.ch/teaching/cg18/downloads/slides/13-participating-media-I.pdf
+    </p>
+    
+
+
+
+    
+
+	<!-- ================================================================= -->
+</div>
+</div>
+
+
+<!-- Bootstrap core JavaScript -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+<script src="resources/bootstrap.min.js"></script>
+<script src="/js/offcanvas.js"></script>
+<script src="resources/jquery.event.move.js"></script>
+<script src="resources/jquery.twentytwenty.js"></script>
+<script src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+<script>
+$(window).load(function(){
+    $(".twentytwenty-container").twentytwenty({default_offset_pct: 0.5});
+    var shiftWindow = function() { scrollBy(0, -80); };
+    window.addEventListener("hashchange", shiftWindow);
+});
+</script>
+
+</body>
+</html>
