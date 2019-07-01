@@ -10,3 +10,5 @@ This is a simple render based on the Nori framework, which includes the followin
 * Homogeneous Participating Media
 
 As the framework may be reused for the same course, the codes are provided upon requested
+# Project Website
+https://ydual.github.io/Nori2-Final-Project/
